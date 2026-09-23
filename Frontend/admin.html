@@ -77,7 +77,7 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:5000/api/properties';
+        const API_URL = 'https://shopno-properties.onrender.com/api/properties';
         let allProperties = []; // এডিট করার সুবিধার জন্য ডেটা সেভ রাখা হচ্ছে
         let editingId = null;   // বর্তমানে কোনোটা এডিট হচ্ছে কি না তার রেকর্ড
 
@@ -93,7 +93,7 @@
                 if(allProperties.length === 0) return list.innerHTML = '<p class="text-center text-gray-500">No data found.</p>';
 
                 allProperties.forEach(prop => {
-                    const imageUrl = prop.image ? `http://localhost:5000/${prop.image}` : 'https://via.placeholder.com/100';
+                    const imageUrl = prop.image ? `https://shopno-properties.onrender.com${prop.image}` : 'https://via.placeholder.com/100';
                     const badge = prop.isBanner ? '<span class="bg-amber-500 text-white text-xs px-2 py-1 rounded ml-2">Banner</span>' : '';
                     
                     list.innerHTML += `
