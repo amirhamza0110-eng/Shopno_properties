@@ -245,30 +245,54 @@
 
     <!-- Backend থেকে ডেটা আনার স্ক্রিপ্ট -->
    
- <script>
-        async function testFetch() {
+<script>
+        async function fetchProperties() {
             try {
-                alert("১. কলিং শুরু হচ্ছে..."); // এটা প্রথমে স্ক্রিনে ভাসবে
-                
+                // আপনার সঠিক Render লিংক দেওয়া আছে
                 const response = await fetch('https://shopno-properties.onrender.com/api/properties');
-                
-                if(response.ok) {
-                    alert("২. ব্যাকএন্ড থেকে রেসপন্স পেয়েছে! স্ট্যাটাস: " + response.status);
-                } else {
-                    alert("২. রেসপন্স ফেইল করেছে!");
+                const properties = await response.json();
+
+                // ১. হিরো ব্যানার সেট করা
+                const latestBanner = properties.reverse().find(p => p.isBanner === true);
+                if (latestBanner) {
+                    const bannerTitle = document.getElementById('bannerTitle');
+                    const bannerLocation = document.getElementById('bannerLocation');
+                    const dynamicHeroImage = document.getElementById('dynamicHeroImage');
+                    
+                    if(bannerTitle) bannerTitle.innerText = latestBanner.title;
+                    if(bannerLocation) bannerLocation.innerText = latestBanner.location;
+                    if(dynamicHeroImage && latestBanner.image) {
+                        dynamicHeroImage.src = latestBanner.image;
+                    }
                 }
 
-                const properties = await response.json();
-                alert("৩. সাকসেস! মোট প্রপার্টি পাওয়া গেছে: " + properties.length + " টি।");
-                
-                console.log("সব ডেটা এখানে:", properties);
+                // ২. প্রপার্টি কার্ডগুলো লোড করা
+                const propertyContainer = document.getElementById('propertyContainer');
+                if (propertyContainer) {
+                    propertyContainer.innerHTML = ''; // আগের ডেমো কন্টেন্ট মুছে ফেলা
+
+                    properties.forEach(property => {
+                        const imageUrl = property.image ? property.image : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+                        
+                        propertyContainer.innerHTML += `
+                            <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition duration-300">
+                                <img src="${imageUrl}" alt="${property.title}" class="w-full h-64 object-cover">
+                                <div class="p-6">
+                                    <h3 class="text-2xl font-bold text-slate-800 mb-2">${property.title}</h3>
+                                    <p class="text-gray-600 mb-4"><i class="fas fa-map-marker-alt text-amber-500 mr-2"></i>${property.location}</p>
+                                    <p class="text-gray-600 mb-4 line-clamp-2">${property.description}</p>
+                                    <a href="details.html?id=${property._id}" class="inline-block bg-blue-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-700 transition">View Details</a>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
             } catch (error) {
-                alert("❌ এরর খেয়েছে: " + error.message);
-                console.error("Error details:", error);
+                console.error("Error loading properties:", error);
             }
         }
 
-        testFetch();
+        fetchProperties();
     </script>
 
 </body>
