@@ -2,46 +2,51 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.urlencoded({ extended: true }));
 
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected Successfully...'))
   .catch((err) => console.log('❌ MongoDB Connection Failed:', err));
 
-// আপডেট করা Schema (Price বাদ, নতুন ফিল্ড যোগ)
+// Cloudinary Config (আপনার .env ফাইল থেকে ডেটা নেবে)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Cloudinary Storage Setup
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'Shopno_Properties', // Cloudinary-তে এই নামে ফোল্ডার তৈরি হবে
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+  },
+});
+const upload = multer({ storage: storage });
+
+// Property Schema
 const propertySchema = new mongoose.Schema({
     title: String,
     location: String,
     description: String,
-    whyBest: String,           // নতুন: Why this is the best
-    allocationPolicy: String,  // নতুন: Plot Allocation Policy
-    image: String,
+    whyBest: String,
+    allocationPolicy: String,
+    image: String, // এখানে এখন Cloudinary-র লাইভ লিংক সেভ হবে
     isBanner: { type: Boolean, default: false }
 }, { timestamps: true });
 
 const Property = mongoose.model('Property', propertySchema);
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const dir = './uploads';
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-        cb(null, dir);
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({ storage: storage });
-
+// GET All Properties
 app.get('/api/properties', async (req, res) => {
     try {
         const properties = await Property.find();
@@ -51,6 +56,7 @@ app.get('/api/properties', async (req, res) => {
     }
 });
 
+// GET Single Property
 app.get('/api/properties/:id', async (req, res) => {
     try {
         const property = await Property.findById(req.params.id);
@@ -61,10 +67,12 @@ app.get('/api/properties/:id', async (req, res) => {
     }
 });
 
+// POST New Property (Cloudinary তে আপলোড)
 app.post('/api/properties', upload.single('image'), async (req, res) => {
     try {
         const { title, location, description, whyBest, allocationPolicy, isBanner } = req.body;
-        const imagePath = req.file ? req.file.path.replace(/\\/g, "/") : "";
+        // req.file.path এখন সরাসরি Cloudinary-র ছবির লাইভ লিংক দেবে
+        const imagePath = req.file ? req.file.path : "";
 
         const newProperty = new Property({
             title, location, description, whyBest, allocationPolicy,
@@ -78,40 +86,27 @@ app.post('/api/properties', upload.single('image'), async (req, res) => {
         res.status(500).json({ message: "Error saving data", error: error.message });
     }
 });
-// ৫. প্রপার্টি আপডেট বা এডিট করার জন্য (PUT)
+
+// PUT (Update Property)
 app.put('/api/properties/:id', upload.single('image'), async (req, res) => {
     try {
         const { title, location, description, whyBest, allocationPolicy, isBanner } = req.body;
-        
-        // যে ডেটাগুলো আপডেট হবে সেগুলো রেডি করা
-        let updateData = { 
-            title, location, description, whyBest, allocationPolicy, 
-            isBanner: isBanner === 'true' 
-        };
+        let updateData = { title, location, description, whyBest, allocationPolicy, isBanner: isBanner === 'true' };
 
-        // যদি এডিটের সময় নতুন কোনো ছবি দেয়, তবেই ছবি আপডেট হবে
         if (req.file) {
-            updateData.image = req.file.path.replace(/\\/g, "/");
-            
-            // পুরনো ছবিটা মেমোরি থেকে ডিলিট করে দেওয়া (যাতে সার্ভার ভারী না হয়)
-            const oldProp = await Property.findById(req.params.id);
-            if (oldProp && oldProp.image && fs.existsSync(oldProp.image)) {
-                fs.unlinkSync(oldProp.image);
-            }
+            updateData.image = req.file.path; // নতুন ছবি দিলে ক্লাউডের লিংক বসবে
         }
 
         const updatedProperty = await Property.findByIdAndUpdate(req.params.id, updateData, { new: true });
         res.status(200).json({ message: "Updated successfully!", data: updatedProperty });
     } catch (error) {
-        res.status(500).json({ message: "Error updating property", error: error.message });
+        res.status(500).json({ message: "Error updating property" });
     }
 });
+
+// DELETE Property
 app.delete('/api/properties/:id', async (req, res) => {
     try {
-        const property = await Property.findById(req.params.id);
-        if (property && property.image && fs.existsSync(property.image)) {
-            fs.unlinkSync(property.image);
-        }
         await Property.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: "Deleted successfully" });
     } catch (error) {

@@ -93,7 +93,7 @@
                 if(allProperties.length === 0) return list.innerHTML = '<p class="text-center text-gray-500">No data found.</p>';
 
                 allProperties.forEach(prop => {
-                    const imageUrl = prop.image ? `https://shopno-properties.onrender.com${prop.image}` : 'https://via.placeholder.com/100';
+                   const imageUrl = prop.image ? prop.image : '[https://via.placeholder.com/100](https://via.placeholder.com/100)'; ? prop.image : '[https://via.placeholder.com/100](https://via.placeholder.com/100)';? `https://shopno-properties.onrender.com${prop.image}` : 'https://via.placeholder.com/100';
                     const badge = prop.isBanner ? '<span class="bg-amber-500 text-white text-xs px-2 py-1 rounded ml-2">Banner</span>' : '';
                     
                     list.innerHTML += `
