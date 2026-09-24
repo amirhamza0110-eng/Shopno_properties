@@ -271,7 +271,7 @@
                 if (propertyContainer) {
                     propertyContainer.innerHTML = ''; // আগের ডেমো কন্টেন্ট মুছে ফেলা
 
-                    properties.forEach(property => {
+                    properties.filter(p => p.isBanner !== true).forEach(property => {
                         const imageUrl = property.image ? property.image : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
                         
                         propertyContainer.innerHTML += `
